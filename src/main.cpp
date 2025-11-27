@@ -7,12 +7,24 @@ const int IN1 = 14;
 const int IN2 = 27; 
 const int IN3 = 26; 
 const int IN4 = 25; 
-
 Stepper myStepper(stepsPerRevolution, IN1, IN2, IN3, IN4); 
 
-void setup() {
+class CommandCallback : public NimBLECharacteristicCallbacks {
+  void onWrite(NimBLECharacteristic* c, NimBLEConnInfo& coninfo) override {
+    std::string cmd = c->getValue();
+    Serial.print("Received BLE command: ");
+    Serial.println(cmd.c_str());
 
-  //Serial.begin(115200); lowkey nicht erforderlich  
+    if (cmd == "rotate_cw") {
+      Serial.println("Rotating clockwise!");
+      //rotateCW(1024);  // 1/4 Drehung
+      myStepper.step(stepsPerRevolution);
+    }
+  }
+}; 
+
+void setup() {
+  Serial.begin(115200);
   myStepper.setSpeed(10); 
 
   // BLE init 
@@ -37,10 +49,8 @@ void setup() {
   adv->start();
 
   Serial.println("advertising");
-
 }
+void loop() {}
 
-void loop() {
-  
-}
-
+// myStepper.step(stepsPerRevolution); drehen im Uhrzeigersinn 
+// danach is ein delay(1000); aber braucht man nd glaub ich 
