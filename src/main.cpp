@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 #include <Stepper.h> 
-
+ 
 const int stepsPerRevolution = 2048; 
 const int IN1 = 14; 
 const int IN2 = 27; 
@@ -9,16 +9,17 @@ const int IN3 = 26;
 const int IN4 = 25; 
 Stepper myStepper(stepsPerRevolution, IN1, IN2, IN3, IN4); 
 
-class CommandCallback : public NimBLECharacteristicCallbacks {
-  void onWrite(NimBLECharacteristic* c, NimBLEConnInfo& coninfo) override {
-    std::string cmd = c->getValue();
-    Serial.print("Received BLE command: ");
-    Serial.println(cmd.c_str());
+bool rotate_flag = false; 
+
+class CommandCallback : 
+  public NimBLECharacteristicCallbacks {
+    void onWrite(NimBLECharacteristic* c, NimBLEConnInfo& coninfo) override {
+      std::string cmd = c->getValue();
+      //Serial.print("Received BLE command: ");
+      //Serial.println(cmd.c_str());
 
     if (cmd == "rotate_cw") {
-      Serial.println("Rotating clockwise!");
-      //rotateCW(1024);  // 1/4 Drehung
-      myStepper.step(stepsPerRevolution);
+      rotate_flag = true; 
     }
   }
 }; 
@@ -29,6 +30,11 @@ void setup() {
 
   // BLE init 
   NimBLEDevice::init("Bby"); 
+  Serial.print("Name vergeben"); 
+  
+  NimBLEAddress addr = NimBLEDevice::getAddress();
+  Serial.print("BLE MAC:");
+  Serial.print(addr.toString().c_str()); 
 
   NimBLEServer * server = NimBLEDevice::createServer();
   NimBLEService * service = server->createService("12345678-1234-1234-1234-1234567890ab"); 
@@ -50,7 +56,10 @@ void setup() {
 
   Serial.println("advertising");
 }
-void loop() {}
+void loop() {
+  if (rotate_flag) {
+        rotate_flag = false;
+        myStepper.step(stepsPerRevolution);
+    }
+}
 
-// myStepper.step(stepsPerRevolution); drehen im Uhrzeigersinn 
-// danach is ein delay(1000); aber braucht man nd glaub ich 
